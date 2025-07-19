@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from './AuthContext'; // Assuming AuthContext.js is in the same folder
 import { BarChart2, LoaderCircle } from 'lucide-react';
+import { useAuth } from './AuthContext';
 
 const LoginPage = ({ onSwitchToSignup }) => {
     const [email, setEmail] = useState('');
@@ -14,20 +14,48 @@ const LoginPage = ({ onSwitchToSignup }) => {
         setIsLoading(true);
         setError('');
 
-        // --- Backend Simulation ---
-        // In a real app, you would make a fetch call to your backend API here
-        // e.g., fetch('/api/auth/login', { method: 'POST', ... })
-        setTimeout(() => {
-            if (email === 'student@mathleap.com' && password === 'password123') {
-                const userData = { name: 'Alex', email: 'student@mathleap.com' };
-                const authToken = 'fake-jwt-token'; // This would come from your backend
-                login(userData, authToken);
+        try {
+            // Replace with your actual backend URL
+            const API_BASE_URL = process.env.REACT_APP_API_URL;
+            
+            const response = await fetch(`${API_BASE_URL}/api/users/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Login successful
+                console.log('Login successful:', data);
+                
+                // The backend returns: { token, name, email, avatar, id }
+                // Log the user in with the returned data
+                login({
+                    name: data.name,
+                    email: data.email,
+                    avatar: data.avatar,
+                    id: data.id
+                }, data.token);
+                
+                // User is now logged in and will be redirected by your app
+                
             } else {
-                setError('Invalid email or password.');
+                // Login failed
+                setError(data.message || 'Login failed. Please try again.');
             }
+        } catch (error) {
+            console.error('Network error:', error);
+            setError('Network error. Please check your connection and try again.');
+        } finally {
             setIsLoading(false);
-        }, 1000);
-        // --- End Simulation ---
+        }
     };
 
     return (
@@ -42,7 +70,7 @@ const LoginPage = ({ onSwitchToSignup }) => {
                 </div>
 
                 <div className="bg-white p-8 rounded-2xl shadow-lg">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-6">
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address</label>
                             <input
@@ -73,13 +101,14 @@ const LoginPage = ({ onSwitchToSignup }) => {
                         <div>
                             <button
                                 type="submit"
+                                onClick={handleSubmit}
                                 disabled={isLoading}
                                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
                             >
                                 {isLoading ? <LoaderCircle className="animate-spin" /> : 'Log In'}
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
                 <p className="mt-6 text-center text-sm text-gray-500">
                     Don't have an account?{' '}

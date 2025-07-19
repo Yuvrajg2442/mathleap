@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from './AuthContext';
 import { BarChart2, LoaderCircle } from 'lucide-react';
+import { useAuth } from './AuthContext';
 
 const SignupPage = ({ onSwitchToLogin }) => {
     const [name, setName] = useState('');
@@ -15,21 +15,49 @@ const SignupPage = ({ onSwitchToLogin }) => {
         setIsLoading(true);
         setError('');
 
-        // --- Backend Simulation ---
-        // In a real app, this would call your registration endpoint
-        // e.g., fetch('/api/auth/register', { ... })
-        setTimeout(() => {
-            if (name && email && password) {
-                // Automatically log the user in after successful signup
-                const userData = { name, email };
-                const authToken = 'fake-jwt-token-for-new-user';
-                login(userData, authToken);
+        try {
+            // Replace with your actual backend URL
+            const API_BASE_URL = process.env.REACT_APP_API_URL;
+            
+            const response = await fetch(`${API_BASE_URL}/api/users/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name,
+                    email,
+                    password
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Registration successful
+                console.log('Registration successful:', data);
+                
+                // The backend returns: { token, name, email, avatar, id }
+                // Log the user in automatically after successful registration
+                login({
+                    name: data.name,
+                    email: data.email,
+                    avatar: data.avatar,
+                    id: data.id
+                }, data.token);
+                
+                // User is now logged in and will be redirected by your app
+                
             } else {
-                setError('Please fill out all fields.');
+                // Registration failed
+                setError(data.message || 'Registration failed. Please try again.');
             }
+        } catch (error) {
+            console.error('Network error:', error);
+            setError('Network error. Please check your connection and try again.');
+        } finally {
             setIsLoading(false);
-        }, 1000);
-        // --- End Simulation ---
+        }
     };
 
     return (
@@ -44,32 +72,64 @@ const SignupPage = ({ onSwitchToLogin }) => {
                 </div>
 
                 <div className="bg-white p-8 rounded-2xl shadow-lg">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-6">
                         <div>
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full Name</label>
-                            <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" placeholder="Alex Doe" />
+                            <input 
+                                id="name" 
+                                type="text" 
+                                value={name} 
+                                onChange={(e) => setName(e.target.value)} 
+                                required 
+                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" 
+                                placeholder="Alex Doe" 
+                            />
                         </div>
                         <div>
                             <label htmlFor="email-signup" className="block text-sm font-medium text-gray-700">Email Address</label>
-                            <input id="email-signup" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" placeholder="you@example.com" />
+                            <input 
+                                id="email-signup" 
+                                type="email" 
+                                value={email} 
+                                onChange={(e) => setEmail(e.target.value)} 
+                                required 
+                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" 
+                                placeholder="you@example.com" 
+                            />
                         </div>
                         <div>
                             <label htmlFor="password-signup" className="block text-sm font-medium text-gray-700">Password</label>
-                            <input id="password-signup" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" placeholder="••••••••" />
+                            <input 
+                                id="password-signup" 
+                                type="password" 
+                                value={password} 
+                                onChange={(e) => setPassword(e.target.value)} 
+                                required 
+                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" 
+                                placeholder="••••••••" 
+                            />
                         </div>
 
                         {error && <p className="text-sm text-red-600">{error}</p>}
 
                         <div>
-                            <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50">
+                            <button 
+                                type="submit" 
+                                onClick={handleSubmit}
+                                disabled={isLoading} 
+                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
+                            >
                                 {isLoading ? <LoaderCircle className="animate-spin" /> : 'Create Account'}
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
                 <p className="mt-6 text-center text-sm text-gray-500">
                     Already have an account?{' '}
-                    <button onClick={onSwitchToLogin} className="font-medium text-orange-600 hover:text-orange-500">
+                    <button 
+                        onClick={onSwitchToLogin} 
+                        className="font-medium text-orange-600 hover:text-orange-500"
+                    >
                         Log in
                     </button>
                 </p>

@@ -1,32 +1,80 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 // Create the context
 const AuthContext = createContext(null);
 
 // Create the provider component
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null); // Could be an object with user details
-    const [token, setToken] = useState(null); // The JWT
+    const [user, setUser] = useState(null);
+    const [token, setToken] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // In a real app, you'd check localStorage or cookies here to see if the user is already logged in.
+    // Check for existing auth data on app load
+    useEffect(() => {
+        const savedToken = localStorage.getItem('authToken');
+        const savedUser = localStorage.getItem('userData');
+        
+        if (savedToken && savedUser) {
+            try {
+                const parsedUser = JSON.parse(savedUser);
+                setToken(savedToken);
+                setUser(parsedUser);
+            } catch (error) {
+                console.error('Error parsing saved user data:', error);
+                // Clear corrupted data
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userData');
+            }
+        }
+        setIsLoading(false);
+    }, []);
 
     const login = (userData, authToken) => {
+        console.log('Logging in user:', userData);
+        
+        // Update state
         setUser(userData);
         setToken(authToken);
-        // In a real app, you'd store the token in localStorage/sessionStorage or a cookie
-        // localStorage.setItem('authToken', authToken);
+        
+        // Store in localStorage for persistence
+        localStorage.setItem('authToken', authToken);
+        localStorage.setItem('userData', JSON.stringify(userData));
     };
 
     const logout = () => {
+        console.log('Logging out user');
+        
+        // Clear state
         setUser(null);
         setToken(null);
-        // localStorage.removeItem('authToken');
+        
+        // Clear localStorage
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
     };
 
-    const isAuthenticated = !!token;
+    const isAuthenticated = !!token && !!user;
+
+    // Function to get headers for API calls
+    const getAuthHeaders = () => {
+        return {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` })
+        };
+    };
+
+    const value = {
+        user,
+        token,
+        isAuthenticated,
+        isLoading,
+        login,
+        logout,
+        getAuthHeaders
+    };
 
     return (
-        <AuthContext.Provider value={{ user, token, isAuthenticated, login, logout }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );
@@ -34,5 +82,9 @@ export const AuthProvider = ({ children }) => {
 
 // Custom hook to use the auth context easily in other components
 export const useAuth = () => {
-    return useContext(AuthContext);
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 };
