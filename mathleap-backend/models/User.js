@@ -1,29 +1,39 @@
-// models/User.js - Defines the schema for the users collection in MongoDB
+const mongoose = require("mongoose");
+const { isEmail } = require("validator");
 
-const mongoose = require('mongoose');
-
-const UserSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
+const UserSchema = new mongoose.Schema(
+  {
+    name: { // Changed from username to name to match frontend
+      type: String,
+      required: true,
+      minlength: [3, "Must be at least 3 characters long"],
+      maxlength: [30, "Must be no more than 30 characters long"],
     },
     email: {
-        type: String,
-        required: true,
-        unique: true, // Ensures no two users can register with the same email
+      type: String,
+      required: true,
+      unique: true,
+      validate: [isEmail, "Must be a valid email address"],
     },
     password: {
-        type: String,
-        required: true, // This will store the hashed password, not the plain text one
+      type: String,
+      required: true,
+      minLength: [6, "Must be at least 6 characters long"], // Adjusted for simplicity
+    },
+    biography: {
+      type: String,
+      default: "",
+      maxLength: [250, "Must be at most 250 characters long"],
     },
     avatar: {
-        type: String, // URL to the user's avatar image
+        type: String,
     },
-    created_at: {
-        type: Date,
-        default: Date.now, // Automatically sets the creation date
+    isAdmin: {
+      type: Boolean,
+      default: false,
     },
-});
+  },
+  { timestamps: true }
+);
 
-// Create and export the model so it can be used in other files (like authController.js)
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model("User", UserSchema); // Changed model name to singular "User" for convention
